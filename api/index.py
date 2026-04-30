@@ -112,10 +112,13 @@ async def chat(request: ChatRequest):
         reply = await agent.chat(messages)
         return ChatResponse(reply=reply)
     except Exception as e:
-        print(f"❌ Chat error: {e}")
+        import traceback
+
+        error_trace = traceback.format_exc()
+        print(f"❌ Chat error:\n{error_trace}")
         raise HTTPException(
             status_code=500,
-            detail="An error occurred processing your request. Please try again.",
+            detail=f"An error occurred: {str(e)}\n\nTraceback:\n{error_trace}",
         )
 
 
