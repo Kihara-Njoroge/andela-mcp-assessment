@@ -57,8 +57,8 @@ function ChatBubble({ message }: { message: Message }) {
       )}
       <div
         className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-sm chat-message text-sm leading-relaxed ${isUser
-            ? "bg-[var(--meridian-user-bg)] text-[var(--meridian-user-text)] rounded-br-md"
-            : "bg-[var(--meridian-bot-bg)] text-[var(--meridian-bot-text)] rounded-bl-md border border-[var(--meridian-border)]"
+          ? "bg-[var(--meridian-user-bg)] text-[var(--meridian-user-text)] rounded-br-md"
+          : "bg-[var(--meridian-bot-bg)] text-[var(--meridian-bot-text)] rounded-bl-md border border-[var(--meridian-border)]"
           }`}
       >
         {/* Render simple markdown-like formatting */}
@@ -159,7 +159,7 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/chat`, {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: updatedMessages }),
