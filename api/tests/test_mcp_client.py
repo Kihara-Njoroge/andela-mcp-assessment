@@ -1,4 +1,3 @@
-import pytest
 from mcp_client import MCPClient
 
 
@@ -12,7 +11,7 @@ def test_parse_sse():
     assert "result" in result
 
 
-def test_get_openai_tools():
+def test_convert_to_openai_tools():
     client = MCPClient("http://fake")
 
     mcp_tools = [
@@ -27,11 +26,11 @@ def test_get_openai_tools():
         }
     ]
 
-    openai_tools = client.get_openai_tools(mcp_tools)
+    openai_tools = client.convert_to_openai_tools(mcp_tools)
 
     assert len(openai_tools) == 1
     assert openai_tools[0]["type"] == "function"
     assert openai_tools[0]["function"]["name"] == "list_products"
     properties = openai_tools[0]["function"]["parameters"]["properties"]
     assert "category" in properties
-    assert "title" not in properties["category"]  # Ensure titles are stripped
+    assert "title" not in properties["category"]
