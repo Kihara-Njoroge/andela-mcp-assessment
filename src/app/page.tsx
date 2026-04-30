@@ -166,6 +166,8 @@ export default function ChatPage() {
       });
 
       if (!res.ok) {
+        const errText = await res.text();
+        console.error("Vercel Python Error:", errText);
         throw new Error(`Server error: ${res.status}`);
       }
 
