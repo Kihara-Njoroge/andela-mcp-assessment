@@ -123,7 +123,7 @@ async def health_check():
 
 @app.post("/api/chat", response_model=ChatResponse)
 @limiter.limit("10/minute")
-async def chat(request: ChatRequest, http_request: Request):
+async def chat(http_request: Request, request: ChatRequest):
     global agent
 
     if not OPENAI_API_KEY:
