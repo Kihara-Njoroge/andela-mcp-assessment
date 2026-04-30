@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: meridian-api
+    runtime: python
+    rootDir: api
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn index:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: MCP_SERVER_URL
+        value: https://order-mcp-74afyau24q-uc.a.run.app/mcp
