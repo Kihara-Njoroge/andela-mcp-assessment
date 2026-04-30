@@ -13,7 +13,12 @@ const config: Config = {
     setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
     moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',
+        '^react-markdown$': '<rootDir>/__mocks__/react-markdown.tsx',
     },
+    transformIgnorePatterns: [
+        '/node_modules/',
+        '^.+\\.module\\.(css|sass|scss)$',
+    ],
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

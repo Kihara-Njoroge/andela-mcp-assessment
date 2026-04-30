@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   role: "user" | "assistant";
@@ -42,16 +43,16 @@ function ChatBubble({ message }: { message: Message }) {
         </div>
       )}
       <div
-        className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-sm chat-message text-sm leading-relaxed ${isUser
-            ? "bg-[var(--meridian-user-bg)] text-[var(--meridian-user-text)] rounded-br-md"
-            : "bg-[var(--meridian-bot-bg)] text-[var(--meridian-bot-text)] rounded-bl-md border border-[var(--meridian-border)]"
+        className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-sm text-sm leading-relaxed ${isUser
+          ? "bg-[var(--meridian-user-bg)] text-[var(--meridian-user-text)] rounded-br-md"
+          : "bg-[var(--meridian-bot-bg)] text-[var(--meridian-bot-text)] rounded-bl-md border border-[var(--meridian-border)] chat-message"
           }`}
       >
-        {message.content.split("\n").map((line, i) => (
-          <p key={i} className={line === "" ? "h-2" : ""}>
-            {line}
-          </p>
-        ))}
+        {isUser ? (
+          <p>{message.content}</p>
+        ) : (
+          <ReactMarkdown>{message.content}</ReactMarkdown>
+        )}
       </div>
       {isUser && (
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center text-white text-xs font-bold ml-2 mt-1 shrink-0">
@@ -230,7 +231,7 @@ export default function ChatPage() {
             </button>
           </div>
           <p className="text-xs text-center text-[var(--meridian-text-secondary)] mt-2">
-            Powered by AI · Meridian Electronics Customer Support
+            Meridian Electronics Customer Support
           </p>
         </div>
       </footer>
