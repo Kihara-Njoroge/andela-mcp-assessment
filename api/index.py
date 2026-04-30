@@ -4,9 +4,13 @@ import traceback
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+from starlette.responses import JSONResponse
 
 from agent import ChatAgent
 
@@ -14,8 +18,11 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+MAX_MESSAGE_LENGTH = 2000
+MAX_MESSAGES_PER_REQUEST = 50
 
 agent: ChatAgent | None = None
+limiter = Limiter(key_func=get_remote_address)
 
 
 @asynccontextmanager
@@ -37,6 +44,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={
+            "detail": "Rate limit exceeded. Please wait before sending another message."
+        },
+    )
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -50,9 +70,40 @@ class Message(BaseModel):
     role: str
     content: str
 
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        if v not in ("user", "assistant", "system"):
+            raise ValueError(
+                f"Invalid role: {v}. Must be 'user', 'assistant', or 'system'."
+            )
+        return v
+
+    @field_validator("content")
+    @classmethod
+    def validate_content(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("Message content cannot be empty.")
+        if len(v) > MAX_MESSAGE_LENGTH:
+            raise ValueError(
+                f"Message content exceeds {MAX_MESSAGE_LENGTH} characters."
+            )
+        return v
+
 
 class ChatRequest(BaseModel):
     messages: list[Message]
+
+    @field_validator("messages")
+    @classmethod
+    def validate_messages(cls, v: list[Message]) -> list[Message]:
+        if not v:
+            raise ValueError("Messages array cannot be empty.")
+        if len(v) > MAX_MESSAGES_PER_REQUEST:
+            raise ValueError(
+                f"Too many messages. Maximum is {MAX_MESSAGES_PER_REQUEST}."
+            )
+        return v
 
 
 class ChatResponse(BaseModel):
@@ -71,7 +122,8 @@ async def health_check():
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+@limiter.limit("10/minute")
+async def chat(request: ChatRequest, http_request: Request):
     global agent
 
     if not OPENAI_API_KEY:
@@ -79,9 +131,6 @@ async def chat(request: ChatRequest):
 
     if not agent:
         agent = ChatAgent(openai_api_key=OPENAI_API_KEY)
-
-    if not request.messages:
-        raise HTTPException(status_code=400, detail="Messages array cannot be empty")
 
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
 
