@@ -176,14 +176,13 @@ export default function ChatPage() {
         ...prev,
         { role: "assistant", content: data.reply },
       ]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Chat error:", error);
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            "I apologize, but I'm having trouble connecting to the server. Please try again in a moment.",
+          content: `I apologize, but I'm having trouble connecting to the server. Please try again in a moment.\n\n**Error Details:**\n${error.message}`,
         },
       ]);
     } finally {
