@@ -123,7 +123,7 @@ async def health_check():
 
 @app.post("/api/chat", response_model=ChatResponse)
 @limiter.limit("10/minute")
-async def chat(http_request: Request, request: ChatRequest):
+async def chat(request: Request, body: ChatRequest):
     global agent
 
     if not OPENAI_API_KEY:
@@ -132,7 +132,7 @@ async def chat(http_request: Request, request: ChatRequest):
     if not agent:
         agent = ChatAgent(openai_api_key=OPENAI_API_KEY)
 
-    messages = [{"role": m.role, "content": m.content} for m in request.messages]
+    messages = [{"role": m.role, "content": m.content} for m in body.messages]
 
     try:
         reply = await agent.chat(messages)
