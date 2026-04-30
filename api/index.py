@@ -17,9 +17,7 @@ from agent import ChatAgent
 load_dotenv()
 
 # --- Configuration ---
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise RuntimeError("OPENAI_API_KEY environment variable is required")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
 # --- Global agent instance ---
 agent: ChatAgent | None = None
@@ -27,15 +25,15 @@ agent: ChatAgent | None = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize the agent on startup."""
+    """Initialize the agent on startup for local dev/long-running processes."""
     global agent
-    agent = ChatAgent(openai_api_key=OPENAI_API_KEY)
-    # Pre-load MCP tools at startup for faster first response
-    try:
-        await agent._ensure_tools_loaded()
-        print("✅ MCP tools loaded successfully")
-    except Exception as e:
-        print(f"⚠️  Failed to pre-load MCP tools: {e}")
+    if OPENAI_API_KEY:
+        agent = ChatAgent(openai_api_key=OPENAI_API_KEY)
+        try:
+            await agent._ensure_tools_loaded()
+            print("✅ MCP tools loaded successfully")
+        except Exception as e:
+            print(f"⚠️  Failed to pre-load MCP tools: {e}")
     yield
 
 
@@ -92,8 +90,17 @@ async def chat(request: ChatRequest):
     Expects the full conversation history (messages array).
     Returns the assistant's reply.
     """
+    global agent
+
+    if not OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="OPENAI_API_KEY missing from Vercel Environment Variables. Please add it in project settings and redeploy.",
+        )
+
     if not agent:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
+        # Lazy initialization for serverless platforms that skip lifespan
+        agent = ChatAgent(openai_api_key=OPENAI_API_KEY)
 
     if not request.messages:
         raise HTTPException(status_code=400, detail="Messages array cannot be empty")
